@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Make a VPC
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+ 
+  MyIGW:
+    Type: AWS::EC2::InternetGateway
+
+  MyVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MyIGW
+      # VpcId: !Ref MyVPC
+      VpcId:
+        Ref: MyVPC
+
+  MyPublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+     
+  MyPrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.20.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+
+  MyPublicRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  MyPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyIGW
+      RouteTableId: !Ref MyPublicRT
+
+  MyPublicSubnetRTAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MyPublicSubnetA
+      RouteTableId: !Ref MyPublicRT
+
+  MyPrivateRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  MyPrivateSubnetRTAssociationA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MyPrivateSubnetA
+      RouteTableId: !Ref MyPrivateRT
+
+Outputs:
+  VPC:
+    Description: MyVPC's VPC ID
+    Value: !Ref MyVPC
+  AZa:
+    Description: Availability Zone a
+    Value: !GetAtt
+      - MyPublicSubnetA
+      - AvailabilityZone
